@@ -10,7 +10,7 @@ import os
 
 # import data
 img_paths = []
-for root, dirs, files in os.walk('.'):
-    img_paths.append(files)
+for root, dirs, files in os.walk('lung_colon_image_set/'):
+    if len(files) != 0:
+        img_paths.extend(files)
 
-print(img_paths)
