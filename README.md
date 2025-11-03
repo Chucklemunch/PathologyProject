@@ -4,6 +4,7 @@ Exploring pathology models
 
 ### Data
 - [LC25000 Dataset](https://academictorrents.com/details/7a638ed187a6180fd6e464b3666a6ea0499af4af)
+- [BreakHis Dataset](https://www.kaggle.com/datasets/ambarish/breakhis)
 
 ### Strategy
 - Fine Tune Model from Nature Paper: [A foundation model for generalizable cancer diagnosis and survival prediction from histopathological images
