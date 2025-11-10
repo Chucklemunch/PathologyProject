@@ -14,4 +14,4 @@ Exploring pathology models
 
 ### AWS EC2 Setup
 - AMI: Deep Learning OSS Nvidia Driver AMI GPU Pytorch 2.8 (Ubuntu 24.04)
-- Instance Type: g4dn.xlarge
+- Instance Type: TBD
