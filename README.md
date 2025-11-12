@@ -16,6 +16,7 @@ Exploring pathology models
 ### AWS EC2 Setup
 - AMI: Deep Learning OSS Nvidia Driver AMI GPU Pytorch 2.8 (Ubuntu 24.04)
 - Instance Type: TBD
+- test
 
 ### Relevant Papers
 - [Training state-of-the-art pathology foundation models with orders of magnitude less data](https://papers.miccai.org/miccai-2025/paper/4651_paper.pdf)
