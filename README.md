@@ -13,6 +13,11 @@ Exploring pathology models
 - Fine tune separate model for each organ in BreakHis?
 - Distributed training on AWS GPUs
 
+### Model Analyses
+- Try to replicate performance on BreakHis dataset found in paper
+- Fine-tune on BreakHis to try to improve performance on specific organs or cancer types (TBD)
+- Try fine-tuning and/or evaluating on magnifications not used during pre-training (100x, 400x)
+
 ### AWS EC2 Setup
 - AMI: Deep Learning OSS Nvidia Driver AMI GPU Pytorch 2.8 (Ubuntu 24.04)
 - Instance Type: TBD
