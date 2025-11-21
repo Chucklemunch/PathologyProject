@@ -20,8 +20,12 @@ Exploring pathology models
 
 ### AWS EC2 Setup
 - AMI: Deep Learning OSS Nvidia Driver AMI GPU Pytorch 2.8 (Ubuntu 24.04)
-- Instance Type: TBD
-- test
+- Instance Type: g4dn.xlarge (single GPU)
+
+### Experiments to Run
+- Train on 40x, test on other magnifications
+- External validation on other pathology datasets
+- Add explainability methods to highlight important features in images
 
 ### Relevant Papers
 - [Training state-of-the-art pathology foundation models with orders of magnitude less data](https://papers.miccai.org/miccai-2025/paper/4651_paper.pdf)
