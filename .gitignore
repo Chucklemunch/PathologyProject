@@ -1,7 +1,7 @@
 /images/
 /breakhis/
 /models/
-/wandb/
+**/wandb/
 __pycache__/
 **/.ipynb_checkpoints/
 nohup.out

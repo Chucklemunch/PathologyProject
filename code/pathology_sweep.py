@@ -7,6 +7,7 @@ Description: Performs hyperparameter sweep with Wandb for Midnight-12k pathology
 
 import os
 import gc
+import pickle
 import torch
 import wandb
 from PIL import Image
@@ -171,7 +172,7 @@ transform = v2.Compose(
 )
     
 dataset = ImageFolder(
-    'images/40X/', 
+    '../images/40X/', 
     loader=loader,
     transform=transform
 )
@@ -231,7 +232,28 @@ sweep_config = {
 sweep_id = wandb.sweep(sweep_config, project=project)
 
 # Launch sweep
-wandb.agent(sweep_id, function=sweep_train, count=10)
+wandb.agent(sweep_id, function=sweep_train, count=20)
+
+# Get best run from sweep and save config
+api = wandb.Api()
+sweep = api.from_path(f'team-chucklemunch/PathologyFineTuning/sweeps/{sweep_id}')
+
+best_config = None
+best_run = None
+best_val_acc = 0
+
+# Selects best run
+for run in sweep.runs:
+    if run.summary['val_acc'] > best_val_acc:
+        best_run = run
+        best_val_acc = run.summary['val_acc']
+
+# Get/Save config from best run
+best_config = run.config
+best_config['val_acc'] = best_val_acc
+
+with open(f'model_configs/best_hp_{sweep_id}.pickle', 'wb') as f:
+    pickle.dump(best_config, f)
 
 # Cleanup 
 wandb.finish()
