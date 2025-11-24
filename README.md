@@ -13,11 +13,6 @@ Exploring pathology models
 - Fine tune separate model for each organ in BreakHis?
 - Distributed training on AWS GPUs
 
-### Model Analyses
-- Try to replicate performance on BreakHis dataset found in paper
-- Fine-tune on BreakHis to try to improve performance on specific organs or cancer types (TBD)
-- Try fine-tuning and/or evaluating on magnifications not used during pre-training (100x, 400x)
-
 ### AWS EC2 Setup
 - AMI: Deep Learning OSS Nvidia Driver AMI GPU Pytorch 2.8 (Ubuntu 24.04)
 - Instance Type: g4dn.xlarge (single GPU)
@@ -30,3 +25,9 @@ Exploring pathology models
 ### Relevant Papers
 - [Training state-of-the-art pathology foundation models with orders of magnitude less data](https://papers.miccai.org/miccai-2025/paper/4651_paper.pdf)
 - [A foundation model for generalizable cancer diagnosis and survival prediction from histopathological images](https://www.nature.com/articles/s41467-025-57587-y#data-availability)
+
+## Cross-Magnification Evaluation
+<img width="1468" height="1080" alt="image" src="https://github.com/user-attachments/assets/d6a86bd0-da16-47eb-a8e3-e40715a0a83a" />
+After conducting a [Wandb sweep](https://wandb.ai/team-chucklemunch/PathologyFineTuning/sweeps/3bh8rw9f?nw=nwusercharliekotula) to determine model hyperparameters, I [fine-tuned](https://wandb.ai/team-chucklemunch/PathologyFineTuning/runs/y5a1r5zw?nw=nwusercharliekotula) the the classification head using the 40X magnification images. Subsequently, I evaluated the fine-tuned model on images from each of the magnification levels, 40X, 100X, 200X, and 400X. The results are shown in the above graph. A reference of un-tuned model performance on the 40X images is also included.
+
+
