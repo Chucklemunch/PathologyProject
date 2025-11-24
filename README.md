@@ -26,7 +26,7 @@ Exploring pathology models
 - [Training state-of-the-art pathology foundation models with orders of magnitude less data](https://papers.miccai.org/miccai-2025/paper/4651_paper.pdf)
 - [A foundation model for generalizable cancer diagnosis and survival prediction from histopathological images](https://www.nature.com/articles/s41467-025-57587-y#data-availability)
 
-## Cross-Magnification Evaluation
+## Cross-Magnification Evaluation (TODO Re-Run experiments with only a single linear layer as the classification head)
 <img width="1526" height="1088" alt="image" src="https://github.com/user-attachments/assets/4efa2e21-1d50-49bf-a7fb-a0b48df2f291" />
 
 After conducting a [Wandb sweep](https://wandb.ai/team-chucklemunch/PathologyFineTuning/sweeps/3bh8rw9f?nw=nwusercharliekotula) to determine model hyperparameters, I [fine-tuned](https://wandb.ai/team-chucklemunch/PathologyFineTuning/runs/y5a1r5zw?nw=nwusercharliekotula) the the classification head using the 40X magnification images. Subsequently, I evaluated the fine-tuned model on images from each of the magnification levels, 40X, 100X, 200X, and 400X. The results are shown in the above graph. A reference of un-tuned model performance on the 40X images is also included.
