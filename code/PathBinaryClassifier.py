@@ -14,7 +14,7 @@ class PathBinaryClassifier(nn.Module):
             nn.ReLU(),
             nn.Dropout(dropout),
             nn.Linear(hidden, 2), # 1 for BCELoss, 2 for CrossEntropyLoss
-            # nn.Sigmoid() Needed for BCELoss, but not 
+            # nn.Sigmoid() Needed for BCELoss, but not CrossEntropyLoss
         )
 
     def forward(self, X):
