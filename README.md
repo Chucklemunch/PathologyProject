@@ -27,7 +27,12 @@ Exploring pathology models
 - [A foundation model for generalizable cancer diagnosis and survival prediction from histopathological images](https://www.nature.com/articles/s41467-025-57587-y#data-availability)
 
 ## Cross-Magnification Evaluation
-<img width="1468" height="1080" alt="image" src="https://github.com/user-attachments/assets/d6a86bd0-da16-47eb-a8e3-e40715a0a83a" />
+<img width="1526" height="1088" alt="image" src="https://github.com/user-attachments/assets/4efa2e21-1d50-49bf-a7fb-a0b48df2f291" />
+
 After conducting a [Wandb sweep](https://wandb.ai/team-chucklemunch/PathologyFineTuning/sweeps/3bh8rw9f?nw=nwusercharliekotula) to determine model hyperparameters, I [fine-tuned](https://wandb.ai/team-chucklemunch/PathologyFineTuning/runs/y5a1r5zw?nw=nwusercharliekotula) the the classification head using the 40X magnification images. Subsequently, I evaluated the fine-tuned model on images from each of the magnification levels, 40X, 100X, 200X, and 400X. The results are shown in the above graph. A reference of un-tuned model performance on the 40X images is also included.
+
+<img width="1478" height="1100" alt="image" src="https://github.com/user-attachments/assets/2ff61247-0a6b-42e1-a483-0f611849323d" />
+
+Additionally, AUROCs were computed across each magnification level. As expected, model performed the best on the 40X magnification images, as this was the magnification level on which it was trained. The low AUROCs on the 100X, 200X, and 400X images suggest poor transfer between the 40X and other magnifcation levels.
 
 
