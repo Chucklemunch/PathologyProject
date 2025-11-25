@@ -12,6 +12,7 @@ Exploring pathology models
 - Use BreakHis dataset for fine tuning
 - Fine tune separate model for each organ in BreakHis?
 - Distributed training on AWS GPUs
+- [Specs for Kaiko-AI's leaderboard](https://kaiko-ai.github.io/eva/main/leaderboards/)
 
 ### AWS EC2 Setup
 - AMI: Deep Learning OSS Nvidia Driver AMI GPU Pytorch 2.8 (Ubuntu 24.04)
@@ -37,4 +38,4 @@ After conducting a [Wandb sweep](https://wandb.ai/team-chucklemunch/PathologyFin
 
 Additionally, AUROCs were computed across each magnification level. As expected, model performed the best on the 40X magnification images, as this was the magnification level on which it was trained. The low AUROCs on the 100X, 200X, and 400X images suggest poor transfer between the 40X and other magnifcation levels.
 
-
+### TODO Redo everything using different classification head with only a single linear layer

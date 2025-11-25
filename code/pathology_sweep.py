@@ -27,17 +27,17 @@ def sweep_train():
     """
     with wandb.init() as run:
         config = wandb.config
-        hidden_dim = config.classifier_hidden_dim
+        # hidden_dim = config.classifier_hidden_dim
         opt_choice = config.optimizer
         init_lr = config.init_lr
-        dropout = config.dropout
+        # dropout = config.dropout
         criterion = config.criterion
 
         # Define model based on HP choice
         model = PathBinaryClassifier(
             backbone=backbone, 
-            hidden=hidden_dim, 
-            dropout=dropout
+            # hidden=hidden_dim, 
+            # dropout=dropout
         ).to(device)
 
         # Freeze model params
@@ -46,17 +46,16 @@ def sweep_train():
                 for param in block.parameters():
                     param.requires_grad = False
 
-        # Select Loss Function
-        if criterion == 'CrossEntropy':
-            loss_fun = nn.CrossEntropyLoss()
+        # Loss Function
+        loss_fun = nn.CrossEntropyLoss()
 
         # Setup optimizer based on HP choice
         if opt_choice == 'AdamW':
-            opt = AdamW(filter(lambda p: p.requires_grad == True, model.parameters()), lr=2e-5)
+            opt = AdamW(filter(lambda p: p.requires_grad == True, model.parameters()), lr=init_lr)
         elif opt_choice == 'Adam':
-            opt = Adam(filter(lambda p: p.requires_grad == True, model.parameters()), lr=2e-5)
+            opt = Adam(filter(lambda p: p.requires_grad == True, model.parameters()), lr=init_lr)
         elif opt_choice == 'SGD':
-            opt = SGD(filter(lambda p: p.requires_grad == True, model.parameters()), lr=2e-5)
+            opt = SGD(filter(lambda p: p.requires_grad == True, model.parameters()), lr=init_lr)
 
         # Train model with HPs choice by sweep
         train(
@@ -64,7 +63,7 @@ def sweep_train():
             train_dataloader,
             val_dataloader,
             opt,
-            loss_fun # defined externally
+            loss_fun
         )
 
 
@@ -92,6 +91,7 @@ def train(model, train_dataloader, val_dataloader, opt, l, epochs=5, grad_accum=
         opt.zero_grad()
 
         # training
+        model.train()
         for X, y in tqdm(train_dataloader):
             X, y = X.to(device), y.to(device)
 
@@ -123,20 +123,19 @@ def train(model, train_dataloader, val_dataloader, opt, l, epochs=5, grad_accum=
 
         print(f'---- Epoch {i+1}/{epochs} Train Loss: {cur_train_loss} --- Train Accuracy: {cur_train_acc} ----')
 
-        # Wandb logging
-        run.log({'train_loss': cur_train_loss, 'train_acc': cur_train_acc})
-        
         # validation
-        for X, y in tqdm(val_dataloader):
-            X, y, = X.to(device), y.to(device)
-
-            # Get predictions
-            output = model(X)
-            
-            # Count correct predictions
-            preds = torch.argmax(output, dim=1)
-            
-            running_correct_val += sum(preds == y).item()
+        model.eval()
+        with torch.no_grad():
+            for X, y in tqdm(val_dataloader):
+                X, y, = X.to(device), y.to(device)
+    
+                # Get predictions
+                output = model(X)
+                
+                # Count correct predictions
+                preds = torch.argmax(output, dim=1)
+                
+                running_correct_val += sum(preds == y).item()
 
 
         # Metrics for validation epoch
@@ -149,7 +148,11 @@ def train(model, train_dataloader, val_dataloader, opt, l, epochs=5, grad_accum=
         print(f'---- Epoch {i+1}/{epochs} Val Accuracy: {cur_val_acc} ----')
 
         # Wandb logging
-        run.log({'val_acc': cur_val_acc})
+        run.log({
+            'train_loss': cur_train_loss, 
+            'train_acc': cur_train_acc,
+            'val_acc': cur_val_acc
+        })
     
     print('Best val acc: ', best_val_acc)
     
@@ -194,12 +197,10 @@ train_dataset, val_dataset, test_dataset = random_split(
 # Make dataloaders
 train_dataloader = DataLoader(train_dataset, batch_size=32, shuffle=True, num_workers=4)
 val_dataloader = DataLoader(val_dataset, batch_size=32, shuffle=False, num_workers=4)
-test_dataloader = DataLoader(test_dataset, batch_size=32, shuffle=False, num_workers=4)
 
 # Load model
 with torch.no_grad():
     backbone = AutoModel.from_pretrained('kaiko-ai/midnight')
-
 
 # NEED GPU
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
@@ -210,19 +211,18 @@ config = {
     'architecture': 'Midnight-12k',
     'dataset': 'BreakHis',
     'optimizer': 'AdamW',
-    'classifier_hidden_dim': 512,
-    'epochs': 2,
+    # 'classifier_hidden_dim': 512,
+    'epochs': 5,
 }
-name = 'trial-run'
 
 # Define config for Sweep
 sweep_config = {
     'method' : 'random',
     'metric' : {'name': 'val_acc', 'goal': 'maximize'},
     'parameters' : {
-        'classifier_hidden_dim' : {'min': 32, 'max': 1024},
+        # 'classifier_hidden_dim' : {'min': 32, 'max': 1024},
         'init_lr' : {'min': 1e-7, 'max': 1e-3},
-        'dropout' : {'min': 0.1, 'max': 0.5},
+        # 'dropout' : {'min': 0.1, 'max': 0.5},
         'optimizer' : {'values' : ['AdamW', 'Adam', 'SGD']},
         'criterion' : {'values' : ['CrossEntropy']}
     },

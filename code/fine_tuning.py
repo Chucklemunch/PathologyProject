@@ -4,7 +4,7 @@ Author: Charlie Kotula
 Date: 2025-11-20
 Description: Fine tunes Midnight-12k pathology foundation model with hyperparameters determined by Wandb sweep
 
-Run script by specifying which the run name, the Wandb sweep (using sweep id) to use for hyperparameters, and how many training epochs to run e.g. "python fine_tuning.py fine-tuning-run-abc 3bh8rw9f 20"
+Run script by specifying which the run name, the Wandb sweep (using sweep id) to use for hyperparameters, and how many training epochs to run e.g. "python fine_tuning.py fine-tuning-run-abc n2rtz657 20"
 """
 
 import os
@@ -13,6 +13,7 @@ import gc
 import torch
 import wandb
 from PIL import Image
+from sklearn.metrics import roc_auc_score
 from transformers import AutoModel
 from torchvision.transforms import v2
 from torchvision.datasets import ImageFolder
@@ -52,15 +53,15 @@ for run in sweep.runs:
 # Get config from best run
 wandb_run_config = run.config
 
-dropout = wandb_run_config['dropout']
+# dropout = wandb_run_config['dropout']
 init_lr = wandb_run_config['init_lr']
 opt_choice = wandb_run_config['optimizer']
-hidden = wandb_run_config['classifier_hidden_dim']
+# hidden = wandb_run_config['classifier_hidden_dim']
 
-print('dropout: ', dropout)
+# print('dropout: ', dropout)
 print('init_lr: ', init_lr)
 print('opt_choice: ', opt_choice)
-print('hidden: ', hidden)
+# print('hidden: ', hidden)
 print('epochs: ', epochs)
 print('wandb_run_name: ', wandb_run_name)
 
@@ -73,7 +74,8 @@ with torch.no_grad():
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
 # Instantiate model
-model = PathBinaryClassifier(backbone, hidden=hidden, dropout=dropout).to(device)
+# model = PathBinaryClassifier(backbone, hidden=hidden, dropout=dropout).to(device)
+model = PathBinaryClassifier(backbone).to(device)
 
 # Freeze all layers except for those in classification head
 for name, block in model.named_children():
@@ -175,9 +177,6 @@ def train(model,
 
         print(f'---- Epoch {i+1}/{epochs} Train Loss: {cur_train_loss} --- Train Accuracy: {cur_train_acc} ----')
 
-        # Wandb logging
-        run.log({'train_loss': cur_train_loss, 'train_acc': cur_train_acc})
-        
         # Validation
         model.eval() # ensure model is in evaluation mode 
         with torch.no_grad():
@@ -199,7 +198,11 @@ def train(model,
         print(f'---- Epoch {i+1}/{epochs} Val Accuracy: {cur_val_acc} ----')
 
         # Wandb logging
-        run.log({'val_acc': cur_val_acc})
+        run.log({
+            'train_loss': cur_train_loss, 
+            'train_acc': cur_train_acc,
+            'val_acc': cur_val_acc
+        })
         
         if cur_val_acc > best_val_acc:
             best_val_acc = cur_val_acc 
@@ -207,6 +210,7 @@ def train(model,
         else:
             epochs_without_gain += 1
             # check if early stopping should occur
+            print('epochs_without_gain: ', epochs_without_gain)
             if epochs_without_gain == 5:
                 print('Stopping early!!!')
                 break
@@ -224,6 +228,8 @@ def test(model, test_dataloader, run):
     Evaluates trained model on test set and logs results to Wandb
     """
     running_correct = 0
+    y_true = []
+    y_score = []
     
     # Evaluating on test dataset
     model.eval() # ensure model is in evaluation mode
@@ -236,17 +242,23 @@ def test(model, test_dataloader, run):
             
             # Count correct predictions
             preds = torch.argmax(output, dim=1)
-            
             running_correct += sum(preds == y).item()
 
-
+            # For later AUROC computation
+            y_probs = torch.softmax(output, dim=1)[:, 1] # Get probabilities of positive class
+            y_score.extend(y_probs.cpu().numpy())
+            y_true.extend(y.cpu().numpy())   
+    
     # Metrics for validation epoch
     test_acc = running_correct / len(test_dataloader.dataset)
-                                            
+    test_auroc = roc_auc_score(y_true, y_score)
+    
     print(f'---- Test Accuracy: {test_acc} ----')
+    print(f'---- Test AUROC: {test_auroc} ----')
+
 
     # Wandb logging
-    run.log({'test_acc': test_acc})
+    run.log({'test_acc': test_acc, 'test_auroc': test_auroc})
     
     return
 
