@@ -1,17 +1,14 @@
 # PathologyProject
-Exploring pathology models
-**Objective: Train a pathology model and fine-tune a pathology foundation model**
+**Objective: Fine-tune and evaluate a pathology foundation model**
 
 ### Data
-- [LC25000 Dataset](https://academictorrents.com/details/7a638ed187a6180fd6e464b3666a6ea0499af4af)
-- [BreakHis Dataset](https://www.kaggle.com/datasets/ambarish/breakhis)
+- [BreakHis Dataset](https://www.kaggle.com/datasets/ambarish/breakhis): Used for fine-tuning
+- [Patch Camelyon (PatchCam) Dataset](https://github.com/basveeling/pcam?tab=readme-ov-file#details): Used for external validation
 
 ### Strategy
 - Fine tune model from Hugging Face
 - [Model: Kaiko-AI's Midnight Model](https://huggingface.co/kaiko-ai/midnight)
 - Use BreakHis dataset for fine tuning
-- Fine tune separate model for each organ in BreakHis?
-- Distributed training on AWS GPUs
 - [Specs for Kaiko-AI's leaderboard](https://kaiko-ai.github.io/eva/main/leaderboards/)
 
 ### AWS EC2 Setup
@@ -20,8 +17,9 @@ Exploring pathology models
 
 ### Experiments to Run
 - Train on 40x, test on other magnifications
-- External validation on other pathology datasets
-- Add explainability methods to highlight important features in images
+- External validation on PCam (train) dataset
+- Explore few-shot learning for different magnification levels?
+- Add explainability methods to highlight important features in images?
 
 ### Relevant Papers
 - [Training state-of-the-art pathology foundation models with orders of magnitude less data](https://papers.miccai.org/miccai-2025/paper/4651_paper.pdf)
@@ -38,4 +36,6 @@ After conducting a [Wandb sweep](https://wandb.ai/team-chucklemunch/PathologyFin
 
 Additionally, AUROCs were computed across each magnification level. As expected, model performed the best on the 40X magnification images, as this was the magnification level on which it was trained. The low AUROCs on the 100X, 200X, and 400X images suggest poor transfer between the 40X and other magnifcation levels.
 
-### TODO Redo everything using different classification head with only a single linear layer
+## External Validation on PCam Dataset
+
+After fine-tuning, I assessed model performance on the PCam dataset. Specifically, the training subset of the dataset, as it has the most images of the train, validation, and test subsets.
