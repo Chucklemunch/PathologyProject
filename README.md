@@ -25,7 +25,7 @@
 - [Training state-of-the-art pathology foundation models with orders of magnitude less data](https://papers.miccai.org/miccai-2025/paper/4651_paper.pdf)
 - [A foundation model for generalizable cancer diagnosis and survival prediction from histopathological images](https://www.nature.com/articles/s41467-025-57587-y#data-availability)
 
-## Cross-Magnification Evaluation
+## Cross-Magnification Evaluation (NEED TO REDO BECAUSE DIDN'T USE CLASS EMBED)
 <img width="1508" height="1110" alt="image" src="https://github.com/user-attachments/assets/1beff89f-1dac-4088-b442-c0624bf42651" />
 
 
