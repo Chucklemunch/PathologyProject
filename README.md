@@ -16,8 +16,9 @@
 - Instance Type: g4dn.xlarge (single GPU)
 
 ### Experiments to Run
-- Train on 40x, test on other magnifications
-- External validation on PCam (train) dataset
+- Train on 40x BreakHis, test on other magnifications
+- External validation of BreakHis training on PCam (train) dataset
+- Train on PCam
 - Explore few-shot learning for different magnification levels?
 - Add explainability methods to highlight important features in images?
 
@@ -41,4 +42,7 @@ Accuracy and AUROCs were all very high, and performance only decreased slightly 
 
 ## External Validation on PCam Dataset
 
-After fine-tuning, I assessed model performance on the PCam dataset. Specifically, the training subset of the dataset, as it has the most images of the train, validation, and test subsets.
+After fine-tuning, I assessed model performance on the PCam dataset. Specifically, the training subset of the dataset, as it has the most images of the train, validation, and test subsets. The results were very poor:
+
+- Accuracy = 0.5179
+- AUROC = 0.5493
