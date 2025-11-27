@@ -16,9 +16,9 @@
 - Instance Type: g4dn.xlarge (single GPU)
 
 ### Experiments to Run
-- Train on 40x BreakHis, test on other magnifications
+- Tune/Train on 40x BreakHis, test on other magnifications
 - External validation of BreakHis training on PCam (train) dataset
-- Train on PCam
+- Tune/Train on PCam
 - Explore few-shot learning for different magnification levels?
 - Add explainability methods to highlight important features in images?
 
@@ -46,3 +46,6 @@ After fine-tuning, I assessed model performance on the PCam dataset. Specificall
 
 - Accuracy = 0.5179
 - AUROC = 0.5493
+
+## Training Directly on PCam (with Hyperparameter Tuning)
+- TBD
