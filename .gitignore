@@ -2,6 +2,7 @@
 /breakhis/
 **/models/
 **/wandb/
+/patch_cam/
 __pycache__/
 **/.ipynb_checkpoints/
 nohup.out
