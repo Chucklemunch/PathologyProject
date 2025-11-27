@@ -25,16 +25,19 @@
 - [Training state-of-the-art pathology foundation models with orders of magnitude less data](https://papers.miccai.org/miccai-2025/paper/4651_paper.pdf)
 - [A foundation model for generalizable cancer diagnosis and survival prediction from histopathological images](https://www.nature.com/articles/s41467-025-57587-y#data-availability)
 
-## Cross-Magnification Evaluation (NEED TO REDO BECAUSE DIDN'T USE CLASS EMBED)
-<img width="1508" height="1110" alt="image" src="https://github.com/user-attachments/assets/1beff89f-1dac-4088-b442-c0624bf42651" />
+## Cross-Magnification Evaluation using Classifification Token and Averaged Patch Embeddings for Predictions
 
+Following the documentation for the Kaiko-AI Midnight12k model, I added a classification head on top of the pre-trained backbone that sends embeddings through a single linear layer to make a binary prediction (0=benign; 1=malignant). The embedding extraction from the pre-trained backbone is as follows:
 
-After conducting a [Wandb sweep](https://wandb.ai/team-chucklemunch/PathologyFineTuning/sweeps/3bh8rw9f?nw=nwusercharliekotula) to determine model hyperparameters, I [fine-tuned](https://wandb.ai/team-chucklemunch/PathologyFineTuning/runs/y5a1r5zw?nw=nwusercharliekotula) the the classification head using the 40X magnification images. Subsequently, I evaluated the fine-tuned model on images from each of the magnification levels, 40X, 100X, 200X, and 400X. The results are shown in the above graph. A reference of un-tuned model performance on the 40X images is also included.
+<img width="1352" height="230" alt="image" src="https://github.com/user-attachments/assets/cab77b72-7dd1-4f51-acab-d4a1d8fed307" />
 
-<img width="1478" height="1092" alt="image" src="https://github.com/user-attachments/assets/f557380e-e868-43f1-bf04-305fa5f4db04" />
+Hyperparameters were chosen by running a [Wandb sweep](https://wandb.ai/team-chucklemunch/PathologyFineTuning/sweeps/gnssbjst?nw=nwusercharliekotula). The model was then fine-tuned by freezing the backbone and only updating weights of the classification head. Details of the training run can be found [here](https://wandb.ai/team-chucklemunch/PathologyFineTuning/runs/z32zvigj?nw=nwusercharliekotula). I evaluated the fine-tuned model on images from each of the magnification levels, 40X, 100X, 200X, and 400X. The results are shown in the above graph. A reference of un-tuned model performance on the 40X images is also included.
 
+<img width="1464" height="1106" alt="image" src="https://github.com/user-attachments/assets/1df3c913-9d1c-4c5a-b261-1921f35bd1cf" />
 
-Additionally, AUROCs were computed across each magnification level. As expected, model performed the best on the 40X magnification images, as this was the magnification level on which it was trained. The low AUROCs on the 100X, 200X, and 400X images suggest poor transfer between the 40X and other magnifcation levels.
+<img width="1466" height="1090" alt="image" src="https://github.com/user-attachments/assets/8bdf8eac-e7ef-4bd4-be95-d829d0b1a95a" />
+
+Accuracy and AUROCs were all very high, and performance only decreased slightly when predicting on images at magnification levels other than the level the classification head was trained on (40x). This suggests high transfer between magnification tasks.
 
 ## External Validation on PCam Dataset
 
