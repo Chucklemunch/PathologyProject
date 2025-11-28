@@ -31,6 +31,10 @@ Hyperparameters were chosen by running a [Wandb sweep](https://wandb.ai/team-chu
 
 <img width="1492" height="1084" alt="image" src="https://github.com/user-attachments/assets/533abe79-9065-40de-ad15-e28fc587d18e" />
 
+
+<img width="1492" height="1106" alt="image" src="https://github.com/user-attachments/assets/5b66b29a-5152-4fb9-a94f-c8b18924c812" />
+
+
 ## External Validation on PCam Dataset
 
 **TBD: REDO WITH MODEL TRAINED PROPERLY**
