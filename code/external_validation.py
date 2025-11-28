@@ -20,6 +20,16 @@ from collections import Counter
 
 ### Extract and reshape images ###
 
+# Transform taken from hugging-face documentation for Midnight model
+transform = v2.Compose(
+    [
+        v2.Resize(224),
+        v2.CenterCrop(224),
+        v2.ToImage(), 
+        v2.ToDtype(torch.float32, scale=True),
+        v2.Normalize(mean=(0.5, 0.5, 0.5), std=(0.5, 0.5, 0.5))
+    ]
+)
 
 # Get images/labels and convert to PyTorch tensors
 with h5py.File('../patch_cam/camelyonpatch_level_2_split_test_x.h5', 'r') as f:
@@ -50,17 +60,6 @@ class PatchCamDataset(Dataset):
 
     def __getitem__(self, idx):
         return (self.transform(self.X[idx]), self.y[idx])
-
-# Transform taken from hugging-face documentation for Midnight model
-transform = v2.Compose(
-    [
-        v2.Resize(224),
-        v2.CenterCrop(224),
-        v2.ToImage(), 
-        v2.ToDtype(torch.float32, scale=True),
-        v2.Normalize(mean=(0.5, 0.5, 0.5), std=(0.5, 0.5, 0.5))
-    ]
-)
 
 dataset = PatchCamDataset(cam_imgs_X, cam_imgs_y, transform)
 dataloader = DataLoader(dataset=dataset, batch_size=32, shuffle=False, num_workers=4)

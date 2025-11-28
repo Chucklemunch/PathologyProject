@@ -4,7 +4,7 @@ Author: Charlie Kotula
 Date: 2025-11-20
 Description: Fine tunes Midnight-12k pathology foundation model with hyperparameters determined by Wandb sweep
 
-Run script by specifying which the run name, the Wandb sweep (using sweep id) to use for hyperparameters, and how many training epochs to run e.g. "python fine_tuning.py fine-tuning-run-abc n2rtz657 20"
+Run script by specifying which the run name, the Wandb sweep (using sweep id) to use for hyperparameters, and how many training epochs to run e.g. "python fine_tuning.py [BreakHis | PCam] fine-tuning-run-abc n2rtz657 20"
 """
 
 import os
@@ -12,12 +12,13 @@ import sys
 import gc
 import torch
 import wandb
+import h5py
 from PIL import Image
 from sklearn.metrics import roc_auc_score
 from transformers import AutoModel
 from torchvision.transforms import v2
 from torchvision.datasets import ImageFolder
-from torch.utils.data import DataLoader, random_split
+from torch.utils.data import Dataset, DataLoader, random_split
 from torch.optim import AdamW, Adam, SGD
 from torch import nn
 from tqdm import tqdm
@@ -26,16 +27,22 @@ from PathBinaryClassifier import PathBinaryClassifier
 ### Process args and get setup HPs for training###
 args = sys.argv[1:]
 
-if len(args) != 3:
-    raise Exception(f'Expected 3 arguments for fine_tuning.py, got {len(args)}')
+if len(args) != 4:
+    raise Exception(f'Expected 4 arguments for fine_tuning.py, got {len(args)}')
     
 # Specify Wandb config/model hyperparameters
 wandb_project = 'PathologyFineTuning'
-wandb_run_name = args[0]
+dataset_name = args[0] # Specifies name of dataset
+wandb_run_name = args[1]
 
 # Getting HPs from Wandb Sweep
-epochs = int(args[2])
-sweep_id = args[1]
+sweep_id = args[2]
+epochs = int(args[3])
+
+print('Dataset: ', dataset_name)
+print('Run name: ', wandb_run_name)
+print('Sweep ID: ', sweep_id)
+print('Epochs: ', epochs)
 
 api = wandb.Api()
 sweep = api.from_path(f'team-chucklemunch/PathologyFineTuning/sweeps/{sweep_id}')
@@ -51,17 +58,13 @@ for run in sweep.runs:
         best_val_acc = run.summary['val_acc']
 
 # Get config from best run
-wandb_run_config = run.config
+wandb_run_config = best_run.config
 
-# dropout = wandb_run_config['dropout']
 init_lr = wandb_run_config['init_lr']
 opt_choice = wandb_run_config['optimizer']
-# hidden = wandb_run_config['classifier_hidden_dim']
 
-# print('dropout: ', dropout)
 print('init_lr: ', init_lr)
 print('opt_choice: ', opt_choice)
-# print('hidden: ', hidden)
 print('epochs: ', epochs)
 print('wandb_run_name: ', wandb_run_name)
 
@@ -74,7 +77,6 @@ with torch.no_grad():
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
 # Instantiate model
-# model = PathBinaryClassifier(backbone, hidden=hidden, dropout=dropout).to(device)
 model = PathBinaryClassifier(backbone).to(device)
 
 # Freeze all layers except for those in classification head
@@ -265,11 +267,43 @@ def test(model, test_dataloader, run):
 ##################################################
 
 #########################
-##### Make Datasets #####
-def loader(path):
-    img = Image.open(path)
-    return img
+###### Make Datasets #####
+#def loader(path):
+#    img = Image.open(path)
+#    return img
+#
+#transform = v2.Compose(
+#    [
+#        v2.Resize(224),
+#        v2.CenterCrop(224),
+#        v2.ToImage(), 
+#        v2.ToDtype(torch.float32, scale=True),
+#        v2.Normalize(mean=(0.5, 0.5, 0.5), std=(0.5, 0.5, 0.5))
+#    ]
+#)
+#    
+#dataset = ImageFolder(
+#    '../images/40X/', 
+#    loader=loader,
+#    transform=transform
+#)
+#
+## Split data into train/val/test
+#num_imgs = len(dataset.samples)
+#train_size = int(num_imgs * 0.7)
+#val_size = int(num_imgs * 0.15)
+#test_size = num_imgs - train_size - val_size
+#
+#generator = torch.Generator().manual_seed(42)
+#
+#train_dataset, val_dataset, test_dataset = random_split(
+#    dataset=dataset,
+#    lengths=[train_size, val_size, test_size],
+#    generator=generator
+#)
+#
 
+# Specify how images should be transformed (same for any dataset)
 transform = v2.Compose(
     [
         v2.Resize(224),
@@ -278,27 +312,101 @@ transform = v2.Compose(
         v2.ToDtype(torch.float32, scale=True),
         v2.Normalize(mean=(0.5, 0.5, 0.5), std=(0.5, 0.5, 0.5))
     ]
-)
-    
-dataset = ImageFolder(
-    '../images/40X/', 
-    loader=loader,
-    transform=transform
-)
+)  
 
-# Split data into train/val/test
-num_imgs = len(dataset.samples)
-train_size = int(num_imgs * 0.7)
-val_size = int(num_imgs * 0.15)
-test_size = num_imgs - train_size - val_size
-
+# Generator used for random splitting
 generator = torch.Generator().manual_seed(42)
 
-train_dataset, val_dataset, test_dataset = random_split(
-    dataset=dataset,
-    lengths=[train_size, val_size, test_size],
-    generator=generator
-)
+
+### Making Datasets ###
+
+### Dataset for PatchCam images
+class PatchCamDataset(Dataset):
+    def __init__(self, X, y, transform):
+        self.X = X
+        self.y = y
+        self.transform = transform
+
+    def __len__(self):
+        return len(self.X)
+
+    def __getitem__(self, idx):
+        return (self.transform(self.X[idx]), self.y[idx])
+
+if dataset_name == 'BreakHis':
+    def loader(path):
+        img = Image.open(path)
+        return img
+        
+    dataset = ImageFolder(
+        '../images/40X/', 
+        loader=loader,
+        transform=transform
+    )
+    
+    # Split data into train/val/test
+    num_imgs = len(dataset.samples)
+   
+    train_size = int(num_imgs * 0.7)
+    val_size = int(num_imgs * 0.15)
+    test_size = num_imgs - train_size - val_size
+
+    train_dataset, val_dataset, test_dataset = random_split(
+        dataset=dataset,
+        lengths=[train_size, val_size, test_size],
+        generator=generator
+    )
+
+    print('train: ', train_size)
+    print('val: ', val_size)
+    print('test: ', test_size)
+
+elif dataset_name == 'PCam':
+    print('making datasets')
+     # Get images/labels and convert to PyTorch tensors
+    with h5py.File('../patch_cam/camelyonpatch_level_2_split_test_x.h5', 'r') as f:
+        cam_imgs_X = torch.Tensor(f['x'][()] / 255) # scaling pixel values to be between 0 and 1
+
+    with h5py.File('../patch_cam/camelyonpatch_level_2_split_test_y.h5', 'r') as f:
+        cam_imgs_y = torch.Tensor(f['y'][()]).long()
+    print('data loaded')
+
+    # Reshape y to be (samples, 1)
+    cam_imgs_y = cam_imgs_y.reshape((cam_imgs_y.shape[0]))
+
+    # Reshape data specify image transformations to suit Midnight model
+    cam_imgs_X = cam_imgs_X.permute(0, 3, 1, 2)
+
+
+    dataset = PatchCamDataset(cam_imgs_X, cam_imgs_y, transform)
+
+    # Split data into train/val/test
+    num_imgs = len(dataset) // 10 # Take subset of PCam
+    remaining_imgs = len(dataset) - num_imgs
+
+    train_size = int(num_imgs * 0.7)
+    val_size = int(num_imgs * 0.15)
+    test_size = num_imgs - train_size - val_size
+
+    # Subset dataset 
+    subset, _ = random_split(
+        dataset=dataset,
+        lengths=[num_imgs, remaining_imgs],
+        generator=generator
+    )
+
+    # Split subset into train/val/test datasets
+    train_dataset, val_dataset, test_dataset = random_split(
+        dataset=subset,
+        lengths=[train_size, val_size, test_size],
+        generator=generator
+    )
+
+    print('train: ', train_size)
+    print('val: ', val_size)
+    print('test: ', test_size)
+else:
+    raise Exception('Data argument did not specify BreakHis of PCam dataset')
 
 # Make dataloaders
 train_dataloader = DataLoader(train_dataset, batch_size=32, shuffle=True, num_workers=4)
@@ -308,6 +416,7 @@ test_dataloader = DataLoader(test_dataset, batch_size=32, shuffle=False, num_wor
 #########################
 
 #### Run training ####
+print('pre train')
 model, best_val_acc = train(model, 
       train_dataloader,
       val_dataloader, 

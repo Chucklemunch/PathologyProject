@@ -3,6 +3,7 @@ File: pathology_sweep.py
 Author: Charlie Kotula
 Date: 2025-11-18
 Description: Performs hyperparameter sweep with Wandb for Midnight-12k pathology foundation model
+Args: Must specify dataset for tuning -- "python pathology_sweep.py [BreakHis|PCam]
 """
 
 import os
@@ -10,15 +11,32 @@ import gc
 import pickle
 import torch
 import wandb
+import sys
+import h5py
 from PIL import Image
 from transformers import AutoModel
 from torchvision.transforms import v2
 from torchvision.datasets import ImageFolder
-from torch.utils.data import DataLoader, random_split
+from torch.utils.data import Dataset, DataLoader, random_split
 from torch.optim import AdamW, Adam, SGD
 from torch import nn
 from tqdm import tqdm
 from PathBinaryClassifier import PathBinaryClassifier
+
+
+### Dataset for PatchCam images
+class PatchCamDataset(Dataset):
+    def __init__(self, X, y, transform):
+        self.X = X
+        self.y = y
+        self.transform = transform
+
+    def __len__(self):
+        return len(self.X)
+
+    def __getitem__(self, idx):
+        return (self.transform(self.X[idx]), self.y[idx])
+
 
 def sweep_train():
     """
@@ -27,17 +45,13 @@ def sweep_train():
     """
     with wandb.init() as run:
         config = wandb.config
-        # hidden_dim = config.classifier_hidden_dim
         opt_choice = config.optimizer
         init_lr = config.init_lr
-        # dropout = config.dropout
         criterion = config.criterion
 
         # Define model based on HP choice
         model = PathBinaryClassifier(
             backbone=backbone, 
-            # hidden=hidden_dim, 
-            # dropout=dropout
         ).to(device)
 
         # Freeze model params
@@ -67,7 +81,7 @@ def sweep_train():
         )
 
 
-def train(model, train_dataloader, val_dataloader, opt, l, epochs=5, grad_accum=4):
+def train(model, train_dataloader, val_dataloader, opt, l, epochs=2, grad_accum=4):
     """
     Trains pathology model
     Returns trained model and best validation accuracy
@@ -158,12 +172,14 @@ def train(model, train_dataloader, val_dataloader, opt, l, epochs=5, grad_accum=
     
     return model, best_val_acc
 
-    
-# Making datasets
-def loader(path):
-    img = Image.open(path)
-    return img
 
+### Parse Args to determine which dataset to use (BreakHis or PCam)
+if len(sys.argv) != 2:
+    raise Exception('Only expected 1 command line argument')
+else:
+    data = sys.argv[1] # BreakHis or PCam
+
+# Specify how images should be transformed (same for any dataset)
 transform = v2.Compose(
     [
         v2.Resize(224),
@@ -172,27 +188,83 @@ transform = v2.Compose(
         v2.ToDtype(torch.float32, scale=True),
         v2.Normalize(mean=(0.5, 0.5, 0.5), std=(0.5, 0.5, 0.5))
     ]
-)
-    
-dataset = ImageFolder(
-    '../images/40X/', 
-    loader=loader,
-    transform=transform
-)
+)  
 
-# Split data into train/val/test
-num_imgs = len(dataset.samples)
-train_size = int(num_imgs * 0.7)
-val_size = int(num_imgs * 0.15)
-test_size = num_imgs - train_size - val_size
-
+# Generator used for random splitting
 generator = torch.Generator().manual_seed(42)
 
-train_dataset, val_dataset, test_dataset = random_split(
-    dataset=dataset,
-    lengths=[train_size, val_size, test_size],
-    generator=generator
-)
+# Making datasets
+if data == 'BreakHis':
+    def loader(path):
+        img = Image.open(path)
+        return img
+
+    
+        
+    dataset = ImageFolder(
+        '../images/40X/', 
+        loader=loader,
+        transform=transform
+    )
+
+    # Split data into train/val/test
+    num_imgs = len(dataset.samples)
+    train_size = int(num_imgs * 0.7)
+    val_size = int(num_imgs * 0.15)
+    test_size = num_imgs - train_size - val_size
+
+
+    train_dataset, val_dataset, test_dataset = random_split(
+        dataset=dataset,
+        lengths=[train_size, val_size, test_size],
+        generator=generator
+    )
+    print('exiting: BreakHis')
+    exit(0)
+elif data == 'PCam':
+     # Get images/labels and convert to PyTorch tensors
+    with h5py.File('../patch_cam/camelyonpatch_level_2_split_test_x.h5', 'r') as f:
+        cam_imgs_X = torch.Tensor(f['x'][()] / 255) # scaling pixel values to be between 0 and 1
+
+    with h5py.File('../patch_cam/camelyonpatch_level_2_split_test_y.h5', 'r') as f:
+        cam_imgs_y = torch.Tensor(f['y'][()]).long()
+
+    # Reshape y to be (samples, 1)
+    cam_imgs_y = cam_imgs_y.reshape((cam_imgs_y.shape[0]))
+
+    # Reshape data specify image transformations to suit Midnight model
+    cam_imgs_X = cam_imgs_X.permute(0, 3, 1, 2)
+
+
+    dataset = PatchCamDataset(cam_imgs_X, cam_imgs_y, transform)
+
+    # Split data into train/val/test
+    num_imgs = len(dataset) // 10 # Take subset of PCam
+    remaining_imgs = len(dataset) - num_imgs
+
+    train_size = int(num_imgs * 0.7)
+    val_size = int(num_imgs * 0.15)
+    test_size = num_imgs - train_size - val_size
+
+    # Subset dataset 
+    subset, _ = random_split(
+        dataset=dataset,
+        lengths=[num_imgs, remaining_imgs],
+        generator=generator
+    )
+
+    # Split subset into train/val/test datasets
+    train_dataset, val_dataset, test_dataset = random_split(
+        dataset=subset,
+        lengths=[train_size, val_size, test_size],
+        generator=generator
+    )
+
+    print('train: ', train_size)
+    print('val: ', val_size)
+    print('test: ', test_size)
+else:
+    raise Exception('Data argument did not specify BreakHis of PCam dataset')
 
 # Make dataloaders
 train_dataloader = DataLoader(train_dataset, batch_size=32, shuffle=True, num_workers=4)
@@ -220,10 +292,9 @@ sweep_config = {
     'method' : 'random',
     'metric' : {'name': 'val_acc', 'goal': 'maximize'},
     'parameters' : {
-        # 'classifier_hidden_dim' : {'min': 32, 'max': 1024},
         'init_lr' : {'min': 1e-7, 'max': 1e-3},
-        # 'dropout' : {'min': 0.1, 'max': 0.5},
-        'optimizer' : {'values' : ['AdamW', 'Adam', 'SGD']},
+        #'optimizer' : {'values' : ['AdamW', 'Adam', 'SGD']},
+        'optimizer' : {'values' : ['AdamW']},
         'criterion' : {'values' : ['CrossEntropy']}
     },
 }
@@ -232,7 +303,7 @@ sweep_config = {
 sweep_id = wandb.sweep(sweep_config, project=project)
 
 # Launch sweep
-wandb.agent(sweep_id, function=sweep_train, count=20)
+wandb.agent(sweep_id, function=sweep_train, count=2)
 
 # Get best run from sweep and save config
 api = wandb.Api()
@@ -249,7 +320,7 @@ for run in sweep.runs:
         best_val_acc = run.summary['val_acc']
 
 # Get/Save config from best run
-best_config = run.config
+best_config = best_run.config
 best_config['val_acc'] = best_val_acc
 
 with open(f'model_configs/best_hp_{sweep_id}.pickle', 'wb') as f:
