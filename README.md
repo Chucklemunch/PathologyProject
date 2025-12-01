@@ -26,10 +26,10 @@ Following the documentation for the Kaiko-AI Midnight12k model, I added a classi
 
 Hyperparameters were chosen by running a [Wandb sweep](https://wandb.ai/team-chucklemunch/PathologyFineTuning/sweeps/gnssbjst?nw=nwusercharliekotula). The model was then fine-tuned by freezing the backbone and only updating weights of the classification head. Details of the training run can be found [here]([https://wandb.ai/team-chucklemunch/PathologyFineTuning/runs/z32zvigj?nw=nwusercharliekotula](https://wandb.ai/team-chucklemunch/PathologyFineTuning/runs/0jsvmoqp?nw=nwusercharliekotula)). I evaluated the fine-tuned model on images from each of the magnification levels, 40X, 100X, 200X, and 400X. The results are shown in the above graph.
 
-<img width="1092" height="684" alt="image" src="https://github.com/user-attachments/assets/533abe79-9065-40de-ad15-e28fc587d18e" />
+<img width="592" height="184" alt="image" src="https://github.com/user-attachments/assets/533abe79-9065-40de-ad15-e28fc587d18e" />
 
 
-<img width="1092" height="706" alt="image" src="https://github.com/user-attachments/assets/5b66b29a-5152-4fb9-a94f-c8b18924c812" />
+<img width="592" height="206" alt="image" src="https://github.com/user-attachments/assets/5b66b29a-5152-4fb9-a94f-c8b18924c812" />
 
 
 ## External Validation on PCam Dataset
