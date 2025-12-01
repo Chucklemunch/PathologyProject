@@ -39,7 +39,7 @@ After fine-tuning, I assessed model performance on the PCam dataset. Specificall
 - AUROC = 0.5456
 
 ## Training Directly on PCam (with Hyperparameter Tuning)
-I also fine-tuned a separate classifier on the PatchCamelyon (PCam) dataset. Because the dataset is very large (327,680 images), I used a 10% (32,768 images) of the PCam training dataset to create my own train, validation, and testing sets. Details of the training run can be found [here](https://wandb.ai/team-chucklemunch/PathologyFineTuning/runs/zbx03t1f?nw=nwusercharliekotula). 
+I also fine-tuned a separate classifier on the PatchCamelyon (PCam) dataset. Because the dataset is very large (327,680 images), I used a 10% (32,768 images) of the PCam training dataset to create my own train, validation, and testing sets. Details of the training run can be found [here](https://wandb.ai/team-chucklemunch/PathologyFineTuning/runs/zbx03t1f?nw=nwusercharliekotula). I achieved a superior accuracy on my PCam test set (0.9833) when compared to Kaiko-AI's (0.929), but these results are not directly comparable, as our classifiers were trained on different subsets of the PCam dataset. 
 
 - Accuracy = 0.9833
 - AUROC = 0.9994
